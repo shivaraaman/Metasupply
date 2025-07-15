@@ -1,3 +1,33 @@
 service : {
-    "greet": (text) -> (text) query;
+  register_user : (text, text) -> (text);
+  get_user : (principal) -> (opt record { username: text });
+
+  upload_file : (record {
+    filename: text;
+    hash: text;
+    model: text;
+    dataset: text;
+    prompt: opt text;
+    previous_hash: opt text;
+  }) -> ();
+
+  search_file : (text) -> (opt record {
+    filename: text;
+    model: text;
+    dataset: text;
+    prompt: opt text;
+    timestamp: nat64;
+    creator: principal;
+    previous_hash: opt text;
+  });
+
+  get_all_files : () -> (vec record {
+    filename: text;
+    model: text;
+    dataset: text;
+    prompt: opt text;
+    timestamp: nat64;
+    creator: principal;
+    previous_hash: opt text;
+  });
 }

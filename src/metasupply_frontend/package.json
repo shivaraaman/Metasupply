@@ -1,30 +1,42 @@
 {
   "name": "metasupply_frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "homepage": "https://YOUR_USERNAME.github.io/REPO_NAME",
   "scripts": {
-    "setup": "npm i && dfx canister create metasupply_backend && dfx generate metasupply_backend && dfx deploy",
+    "dev": "vite",
     "start": "vite --port 3000",
-    "prebuild": "dfx generate",
     "build": "tsc && vite build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "setup": "npm i && dfx canister create metasupply_backend && dfx generate metasupply_backend && dfx deploy",
     "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\""
   },
   "dependencies": {
+    "@dfinity/agent": "^2.4.1",
+    "@dfinity/auth-client": "^2.4.1",
+    "@dfinity/candid": "^2.1.3",
+    "@dfinity/identity": "^2.4.1",
+    "@dfinity/principal": "^2.1.3",
+    "lucide-react": "^0.525.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@dfinity/agent": "^2.1.3",
-    "@dfinity/candid": "^2.1.3",
-    "@dfinity/principal": "^2.1.3"
+    "react-router-dom": "^7.6.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
     "@vitejs/plugin-react": "^4.0.1",
+    "autoprefixer": "^10.4.21",
     "dotenv": "^16.3.1",
+    "gh-pages": "^6.0.0",
+    "postcss": "^8.5.6",
     "sass": "^1.63.6",
+    "tailwindcss": "^3.4.3",
     "typescript": "^5.1.3",
-    "vite": "^4.3.9",
+    "vite": "^7.0.3",
     "vite-plugin-environment": "^1.1.3"
   }
 }

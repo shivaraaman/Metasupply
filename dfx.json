@@ -1,36 +1,35 @@
 {
   "canisters": {
     "internet_identity": {
-      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "frontend": {},
+      "type": "custom",
+      "candid": "internet-identity/src/internet_identity/internet_identity.did",
+      "wasm": "internet-identity/internet_identity.wasm.gz",
+      "build": "",
       "remote": {
         "id": {
           "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
         }
-      },
-      "type": "custom",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+      }
     },
     "metasupply_backend": {
-      "candid": "src/metasupply_backend/metasupply_backend.did",
+      "type": "rust",
       "package": "metasupply_backend",
-      "type": "rust"
+      "candid": "src/metasupply_backend/metasupply_backend.did"
     },
     "metasupply_frontend": {
+      "type": "assets",
       "dependencies": [
         "metasupply_backend"
       ],
       "source": [
         "src/metasupply_frontend/dist"
-      ],
-      "type": "assets",
-      "workspace": "metasupply_frontend"
+      ]
     }
   },
   "defaults": {
     "build": {
-      "args": "",
-      "packtool": ""
+      "packtool": "",
+      "args": ""
     }
   },
   "output_env_file": ".env",

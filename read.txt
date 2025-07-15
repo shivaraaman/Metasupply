@@ -1,0 +1,51 @@
+dfx start --background
+dfx start --clean --background
+dfx identity --network ic get-principal
+dfx canister create --all
+
+cd internet-identity
+
+cargo clean 
+
+cargo install ic-wasm --version 0.8.5
+
+if it not installed:
+1. Check Current Swap
+free -h
+2. Turn off current swap
+sudo swapoff -a
+3. Remove old swap file (optional if you're replacing it)
+sudo rm -f /swapfile
+4. Create a new 4GB swap file
+sudo fallocate -l 4G /swapfile
+If fallocate doesn't work, use:
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+5. Set proper permissions
+sudo chmod 600 /swapfile
+6. Format it as swap
+sudo mkswap /swapfile
+7. Enable the swap
+sudo swapon /swapfile
+8. Make it permanent
+Add this line to /etc/fstab (only once):
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+9. Confirm
+free -h
+
+⚡ Optional: Improve Performance with vm.swappiness
+sudo sysctl vm.swappiness=10
+To make it permanent:
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+cargo build --release --target wasm32-unknown-unknown
+
+cargo install ic-wasm --version 0.8.5 --force
+ic-wasm --version
+dfx deploy internet_identity --network local
+
+
+for frontend:
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+
