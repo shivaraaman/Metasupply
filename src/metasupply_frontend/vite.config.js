@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
 export default defineConfig({
-  base: "/REPO_NAME/", // replace with your repo name
+  base: "Metasupply", // replace with your repo name
   build: {
     emptyOutDir: true,
   },
@@ -36,7 +36,7 @@ export default defineConfig({
     alias: [
       {
         find: "declarations",
-        replacement: fileURLToPath(new URL("../declarations", import.meta.url)),
+        replacement: fileURLToPath(new URL("/home/abc/metasupply/src/declarations", import.meta.url)),
       },
     ],
     dedupe: ["@dfinity/agent"],

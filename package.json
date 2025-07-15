@@ -14,5 +14,8 @@
   "type": "module",
   "workspaces": [
     "src/metasupply_frontend"
-  ]
+  ],
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
 }

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://YOUR_USERNAME.github.io/REPO_NAME",
+  "homepage": "https://shivaraaman.github.io/Metasupply",
   "scripts": {
     "dev": "vite",
     "start": "vite --port 3000",
