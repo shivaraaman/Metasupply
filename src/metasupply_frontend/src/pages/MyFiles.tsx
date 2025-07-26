@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { backendActor } from "../utils/backend";
+import { backendActor } from "../services/agent";
 
 interface FileRecord {
   filename: string;

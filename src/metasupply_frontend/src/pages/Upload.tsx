@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { backendActor } from "../utils/backend";
+import { backendActor } from "../services/agent";
 
 const Upload: React.FC = () => {
   const [filename, setFilename] = useState("");
