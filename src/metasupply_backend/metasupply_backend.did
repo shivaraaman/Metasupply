@@ -1,3 +1,15 @@
-service : {
-    "greet": (text) -> (text) query;
+type FileMetadata = record {
+  id : text;
+  model : text;
+  creator : principal;
+  dataset : text;
+  filename : text;
+  previous_hash : opt text;
+  timestamp : nat64;
+  prompt : text;
+};
+type Result = variant { Ok : text; Err : text };
+service : () -> {
+  get_all_files : () -> (vec FileMetadata) query;
+  upload_file : (text, text, text, text, text, opt text) -> (Result);
 }
