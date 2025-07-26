@@ -1,5 +1,5 @@
 import { HttpAgent, Actor } from '@dfinity/agent';
-import { idlFactory } from '/home/abc/metasupply/src/declarations/metasupply_backend';
+import { idlFactory } from 'declarations/metasupply_backend';
 
 
 const canisterId = import.meta.env.VITE_CANISTER_ID_METASUPPLY_BACKEND as string;
