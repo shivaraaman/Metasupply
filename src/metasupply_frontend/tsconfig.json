@@ -28,7 +28,7 @@
     "paths": {
       "@dfinity/*": ["./node_modules/@dfinity/*"],
       // Keep your existing declarations alias if you prefer, or remove if not used in your code
-      "declarations/*": ["../declarations/*"]
+      "declarations/*": ["../../declarations/*"]
     },
     "types": ["node"],
   },
