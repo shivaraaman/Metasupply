@@ -22,6 +22,9 @@ export default defineConfig({
       plugins: [polyfillNode()],
       output: {
         intro: 'const global = globalThis;',
+        entryFileNames: `[name]-[hash].js`,      // For entry chunks (like main.js)
+        chunkFileNames: `[name]-[hash].js`,      // For dynamically imported chunks
+        assetFileNames: `[name]-[hash].[ext]`,  
       },
     }
   },

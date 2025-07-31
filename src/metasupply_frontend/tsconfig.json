@@ -22,12 +22,15 @@
     "noFallthroughCasesInSwitch": true,
 
     // Add "node" to types for process.env
-    "types": ["node"],
+    
     // Add baseUrl and paths to resolve module imports like 'declarations/...'
     "baseUrl": ".",
     "paths": {
+      "@dfinity/*": ["./node_modules/@dfinity/*"],
+      // Keep your existing declarations alias if you prefer, or remove if not used in your code
       "declarations/*": ["../declarations/*"]
-    }
+    },
+    "types": ["node"],
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
