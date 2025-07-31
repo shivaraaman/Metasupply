@@ -1,5 +1,5 @@
 import { ActorSubclass } from "@dfinity/agent";
-import { _SERVICE } from "../../../declarations/metasupply_backend/metasupply_backend.did"; // Generated service type
+import { _SERVICE } from "declarations/metasupply_backend"; // Generated service type
 import { FileMetadata } from "../types"; // Custom type definition
 
 // Interface for arguments when uploading a file.
