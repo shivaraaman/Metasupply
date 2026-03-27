@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext"; // Import AuthProvider and useAuth hook
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom"; // For routing
+import { HashRouter as Router, Routes, Route, Link } from "react-router-dom"; // For routing
 import LoginPage from "./pages/LoginPage"; // Import page components
 import UploadPage from "./pages/UploadPage";
 import MyFilesPage from "./pages/MyFilesPage";

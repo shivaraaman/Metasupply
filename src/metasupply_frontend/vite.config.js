@@ -8,11 +8,8 @@ import polyfillNode from 'rollup-plugin-polyfill-node';
 dotenv.config({ path: '../../.env' });
 
 export default defineConfig({
-  // *** THIS IS THE CRUCIAL CHANGE ***
-  // Set the base path for your application.
-  // Using '/' makes paths absolute from the canister's root,
-  // which aligns with your <base href="/"> in index.html and dfx.json's serving behavior.
-  base: './', 
+  // Base path for GitHub Pages deployment (matches repository name)
+  base: '/Metasupply/', 
   // **********************************
   build: {
     target: 'es2020', // Ensure compatibility for IC deployment

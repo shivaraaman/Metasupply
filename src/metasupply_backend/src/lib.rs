@@ -16,27 +16,41 @@ pub struct FileMetadata {
     pub timestamp: u64, // Unix timestamp in nanoseconds
 }
 
+use std::cell::RefCell;
+
 // Store files mapping Principal (user) to a vector of their FileMetadata
-static mut FILES: Option<HashMap<Principal, Vec<FileMetadata>>> = None;
+thread_local! {
+    static FILES: RefCell<HashMap<Principal, Vec<FileMetadata>>> = RefCell::new(HashMap::new());
+}
 
 // Initialize the state when the canister is created or upgraded.
 #[init]
 fn init() {
-    unsafe {
-        FILES = Some(HashMap::new()); // FIX: Changed HashMap() to HashMap::new()
-    }
     ic_cdk::println!("MetaSupply Backend Canister Initialized!");
 }
 
-// Post-upgrade hook, similar to init, ensures state is maintained across upgrades.
+// Pre-upgrade hook, saves the current state to stable memory before an upgrade.
+#[pre_upgrade]
+fn pre_upgrade() {
+    FILES.with(|files| {
+        let current_state = files.borrow().clone();
+        if let Err(e) = ic_cdk::storage::stable_save((current_state,)) {
+            ic_cdk::println!("Failed to save state to stable memory: {:?}", e);
+        }
+    });
+}
+
+// Post-upgrade hook, restores state from stable memory after an upgrade.
 #[post_upgrade]
 fn post_upgrade() {
-    unsafe {
-        if FILES.is_none() {
-            FILES = Some(HashMap::new()); // FIX: Changed HashMap() to HashMap::new()
-        }
+    if let Ok((restored_files,)) = ic_cdk::storage::stable_restore::<(HashMap<Principal, Vec<FileMetadata>>,)>() {
+        FILES.with(|files| {
+            *files.borrow_mut() = restored_files;
+        });
+        ic_cdk::println!("MetaSupply Backend Canister Upgraded and state restored!");
+    } else {
+        ic_cdk::println!("MetaSupply Backend Canister Upgraded but failed to restore state.");
     }
-    ic_cdk::println!("MetaSupply Backend Canister Upgraded!");
 }
 
 // Public method to upload file metadata.
@@ -51,6 +65,17 @@ fn upload_file(
 ) -> Result<String, String> {
     let caller = ic_cdk::api::caller();
     let timestamp = time();
+
+    // Security check: Limit input sizes to prevent DoS via storage exhaustion
+    if id.len() > 128 || filename.len() > 256 || model.len() > 128 || dataset.len() > 128 || prompt.len() > 2048 {
+        return Err("Input fields exceed maximum allowed length.".to_string());
+    }
+
+    if let Some(ref ph) = previous_hash {
+        if ph.len() > 128 {
+            return Err("Previous hash exceeds maximum allowed length.".to_string());
+        }
+    }
 
     // Clone `id` and `filename` BEFORE they are moved into `new_file`.
     let id_for_log = id.clone();
@@ -67,19 +92,23 @@ fn upload_file(
         timestamp,
     };
 
-    unsafe {
-        let files_map = FILES
-            .as_mut()
-            .expect("Canister not initialized. Call init() or post_upgrade() first.");
-
+    FILES.with(|files| {
+        let mut files_map = files.borrow_mut();
+        
         let user_files = files_map.entry(caller).or_insert_with(Vec::new);
+
+        // Security check: Cap the number of files a single user can upload
+        if user_files.len() >= 1000 {
+            return Err("Maximum number of files per user (1000) reached.".to_string());
+        }
 
         if user_files.iter().any(|f| f.id == new_file.id) {
             return Err(format!("File with ID {} already exists for this user.", new_file.id));
         }
 
         user_files.push(new_file);
-    }
+        Ok(())
+    })?;
 
     // Use the cloned variables for logging, as the originals have been moved.
     ic_cdk::println!("File uploaded: ID={}, Filename={}, Creator={}", id_for_log, filename_for_log, caller);
@@ -91,16 +120,13 @@ fn upload_file(
 #[query]
 fn get_all_files() -> Vec<FileMetadata> {
     let caller = ic_cdk::api::caller();
-    unsafe {
-        let files_map = FILES
-            .as_ref()
-            .expect("Canister not initialized. Call init() or post_upgrade() first.");
-
-        files_map
+    FILES.with(|files| {
+        files
+            .borrow()
             .get(&caller)
             .cloned()
             .unwrap_or_else(Vec::new)
-    }
+    })
 }
 
 #[cfg(test)]
