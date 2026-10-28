@@ -1,59 +1,70 @@
 use candid::{CandidType, Deserialize, Principal};
-use ic_cdk_macros::*;
+use ic_cdk::api::{caller, time};
+use ic_cdk::{init, post_upgrade, pre_upgrade, query, update};
+use std::cell::RefCell;
 use std::collections::HashMap;
-use ic_cdk::api::time;
 
-// Define the structure for file metadata
+const MAX_ID_LEN: usize = 128;
+const MAX_FILENAME_LEN: usize = 256;
+const MAX_MODEL_LEN: usize = 128;
+const MAX_DATASET_LEN: usize = 128;
+const MAX_PROMPT_LEN: usize = 2048;
+const MAX_FILES_PER_USER: usize = 1000;
+
+/// Metadata for one version of a file.
 #[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct FileMetadata {
-    pub id: String, // SHA-256 hash of the file content + metadata for uniqueness
+    /// SHA-256 hash of the metadata, unique per user.
+    pub id: String,
     pub filename: String,
     pub model: String,
     pub dataset: String,
     pub prompt: String,
-    pub previous_hash: Option<String>, // Link to the previous version
+    /// ID of the version this one replaces, if any.
+    pub previous_hash: Option<String>,
     pub creator: Principal,
-    pub timestamp: u64, // Unix timestamp in nanoseconds
+    /// Upload time in nanoseconds since the Unix epoch.
+    pub timestamp: u64,
 }
 
-use std::cell::RefCell;
+type FileStore = HashMap<Principal, Vec<FileMetadata>>;
 
-// Store files mapping Principal (user) to a vector of their FileMetadata
 thread_local! {
-    static FILES: RefCell<HashMap<Principal, Vec<FileMetadata>>> = RefCell::new(HashMap::new());
+    static FILES: RefCell<FileStore> = RefCell::new(HashMap::new());
 }
 
-// Initialize the state when the canister is created or upgraded.
 #[init]
 fn init() {
-    ic_cdk::println!("MetaSupply Backend Canister Initialized!");
+    ic_cdk::println!("MetaSupply backend initialized");
 }
 
-// Pre-upgrade hook, saves the current state to stable memory before an upgrade.
 #[pre_upgrade]
 fn pre_upgrade() {
     FILES.with(|files| {
-        let current_state = files.borrow().clone();
-        if let Err(e) = ic_cdk::storage::stable_save((current_state,)) {
-            ic_cdk::println!("Failed to save state to stable memory: {:?}", e);
-        }
+        ic_cdk::storage::stable_save((&*files.borrow(),))
+            .expect("failed to save state to stable memory");
     });
 }
 
-// Post-upgrade hook, restores state from stable memory after an upgrade.
 #[post_upgrade]
 fn post_upgrade() {
-    if let Ok((restored_files,)) = ic_cdk::storage::stable_restore::<(HashMap<Principal, Vec<FileMetadata>>,)>() {
-        FILES.with(|files| {
-            *files.borrow_mut() = restored_files;
-        });
-        ic_cdk::println!("MetaSupply Backend Canister Upgraded and state restored!");
-    } else {
-        ic_cdk::println!("MetaSupply Backend Canister Upgraded but failed to restore state.");
+    match ic_cdk::storage::stable_restore::<(FileStore,)>() {
+        Ok((restored,)) => FILES.with(|files| *files.borrow_mut() = restored),
+        Err(e) => ic_cdk::println!("No state restored after upgrade: {}", e),
     }
 }
 
-// Public method to upload file metadata.
+fn check_len(field: &str, value: &str, max: usize) -> Result<(), String> {
+    if value.trim().is_empty() {
+        return Err(format!("{} must not be empty.", field));
+    }
+    if value.len() > max {
+        return Err(format!("{} exceeds the maximum length of {}.", field, max));
+    }
+    Ok(())
+}
+
+/// Stores metadata for a new file (or a new version of one) owned by the caller.
 #[update]
 fn upload_file(
     id: String,
@@ -63,79 +74,61 @@ fn upload_file(
     prompt: String,
     previous_hash: Option<String>,
 ) -> Result<String, String> {
-    let caller = ic_cdk::api::caller();
-    let timestamp = time();
-
-    // Security check: Limit input sizes to prevent DoS via storage exhaustion
-    if id.len() > 128 || filename.len() > 256 || model.len() > 128 || dataset.len() > 128 || prompt.len() > 2048 {
-        return Err("Input fields exceed maximum allowed length.".to_string());
+    let creator = caller();
+    if creator == Principal::anonymous() {
+        return Err("You must be logged in to upload files.".to_string());
     }
 
-    if let Some(ref ph) = previous_hash {
-        if ph.len() > 128 {
-            return Err("Previous hash exceeds maximum allowed length.".to_string());
-        }
+    check_len("ID", &id, MAX_ID_LEN)?;
+    check_len("Filename", &filename, MAX_FILENAME_LEN)?;
+    check_len("Model", &model, MAX_MODEL_LEN)?;
+    check_len("Dataset", &dataset, MAX_DATASET_LEN)?;
+    check_len("Prompt", &prompt, MAX_PROMPT_LEN)?;
+    let previous_hash = previous_hash.filter(|ph| !ph.trim().is_empty());
+    if let Some(ph) = &previous_hash {
+        check_len("Previous hash", ph, MAX_ID_LEN)?;
     }
 
-    // Clone `id` and `filename` BEFORE they are moved into `new_file`.
-    let id_for_log = id.clone();
-    let filename_for_log = filename.clone();
-
-    let new_file = FileMetadata {
-        id, // Ownership of `id` moves here
-        filename, // Ownership of `filename` moves here
-        model, // Ownership of `model` moves here
-        dataset, // Ownership of `dataset` moves here
-        prompt, // Ownership of `prompt` moves here
-        previous_hash,
-        creator: caller,
-        timestamp,
-    };
-
     FILES.with(|files| {
-        let mut files_map = files.borrow_mut();
-        
-        let user_files = files_map.entry(caller).or_insert_with(Vec::new);
+        let mut files = files.borrow_mut();
+        let user_files = files.entry(creator).or_default();
 
-        // Security check: Cap the number of files a single user can upload
-        if user_files.len() >= 1000 {
-            return Err("Maximum number of files per user (1000) reached.".to_string());
+        if user_files.len() >= MAX_FILES_PER_USER {
+            return Err(format!(
+                "Maximum number of files per user ({}) reached.",
+                MAX_FILES_PER_USER
+            ));
+        }
+        if user_files.iter().any(|f| f.id == id) {
+            return Err(format!("File with ID {} already exists.", id));
+        }
+        if let Some(ph) = &previous_hash {
+            if !user_files.iter().any(|f| &f.id == ph) {
+                return Err(format!("Previous version {} was not found.", ph));
+            }
         }
 
-        if user_files.iter().any(|f| f.id == new_file.id) {
-            return Err(format!("File with ID {} already exists for this user.", new_file.id));
-        }
-
-        user_files.push(new_file);
-        Ok(())
-    })?;
-
-    // Use the cloned variables for logging, as the originals have been moved.
-    ic_cdk::println!("File uploaded: ID={}, Filename={}, Creator={}", id_for_log, filename_for_log, caller);
-    // Use the cloned ID for the success message.
-    Ok(format!("File {} uploaded successfully!", id_for_log))
-}
-
-// Public method to fetch all uploaded files for the calling user.
-#[query]
-fn get_all_files() -> Vec<FileMetadata> {
-    let caller = ic_cdk::api::caller();
-    FILES.with(|files| {
-        files
-            .borrow()
-            .get(&caller)
-            .cloned()
-            .unwrap_or_else(Vec::new)
+        ic_cdk::println!("File uploaded: id={}, filename={}, creator={}", id, filename, creator);
+        let message = format!("File {} uploaded successfully!", id);
+        user_files.push(FileMetadata {
+            id,
+            filename,
+            model,
+            dataset,
+            prompt,
+            previous_hash,
+            creator,
+            timestamp: time(),
+        });
+        Ok(message)
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn generate_candid() {
-        candid::export_service!();
-        std::fs::write("metasupply_backend.did", __export_service()).expect("Failed to write .did file");
-    }
+/// Returns every file uploaded by the caller.
+#[query]
+fn get_all_files() -> Vec<FileMetadata> {
+    let creator = caller();
+    FILES.with(|files| files.borrow().get(&creator).cloned().unwrap_or_default())
 }
+
+ic_cdk::export_candid!();

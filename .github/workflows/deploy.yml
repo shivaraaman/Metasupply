@@ -1,51 +1,61 @@
-name: Deploy to GitHub Pages
+name: Build and deploy
 
 on:
   push:
     branches:
-      - deployment # Trigger on push to the deployment branch
+      - deployment
+  pull_request:
+  workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  backend:
+    name: Build backend canister
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Add Rust wasm32 target (Required for dfx generate of rust canisters)
+      - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Install dfx
-        uses: dfinity/setup-dfx@main
+      - uses: Swatinem/rust-cache@v2
 
-      - name: Install dependencies and build
-        run: |
-          npm ci
-          # dfx generate requires a network configuration but local is fine for just generating types
-          npm run build
+      - name: Build canister wasm
+        run: cargo build --release --target wasm32-unknown-unknown -p metasupply_backend
+
+  frontend:
+    name: Build and deploy frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
         env:
-          DFX_NETWORK: "ic"
+          # GitHub Pages serves this project from https://<user>.github.io/<repo>/
+          BASE_PATH: /${{ github.event.repository.name }}/
+          DFX_NETWORK: ic
+          # Set this repository variable to the backend canister ID on the IC mainnet
+          # (Settings → Secrets and variables → Actions → Variables).
+          CANISTER_ID_METASUPPLY_BACKEND: ${{ vars.CANISTER_ID_METASUPPLY_BACKEND }}
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./src/metasupply_frontend/dist

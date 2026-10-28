@@ -1,29 +1,46 @@
-// metasupply/src/metasupply_frontend/src/App.tsx
-
 import React from "react";
-import { AuthProvider, useAuth } from "./contexts/AuthContext"; // Import AuthProvider and useAuth hook
-import { HashRouter as Router, Routes, Route, Link } from "react-router-dom"; // For routing
-import LoginPage from "./pages/LoginPage"; // Import page components
+import { HashRouter as Router, Link, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
 import MyFilesPage from "./pages/MyFilesPage";
 import SearchPage from "./pages/SearchPage";
-import LoadingSpinner from "./components/LoadingSpinner"; // Import loading spinner
+import LoadingSpinner from "./components/LoadingSpinner";
+import Alert from "./components/Alert";
 
-// Main application component. It wraps the entire app with AuthProvider.
-function App() {
+const navLink =
+  "text-lg font-medium hover:text-blue-200 transition-colors rounded-md px-3 py-1 hover:bg-blue-700";
+
+const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+const Home: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   return (
-    // AuthProvider makes authentication state and functions available throughout the app
-    <AuthProvider>
-      <AppContent /> {/* Render the main content component */}
-    </AuthProvider>
+    <div className="text-center py-20">
+      <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-6">Welcome to MetaSupply</h1>
+      <p className="text-xl text-gray-600 mb-8">
+        Your decentralized platform for managing file metadata and versioning on the Internet Computer.
+      </p>
+      {isAuthenticated ? (
+        <p className="text-lg text-gray-700">You are logged in! Navigate using the menu above.</p>
+      ) : (
+        <Link
+          to="/login"
+          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
+        >
+          Get Started - Login
+        </Link>
+      )}
+    </div>
   );
-}
+};
 
-// AppContent component consumes AuthContext and handles conditional rendering and routing.
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isAuthReady, logout } = useAuth(); // Get auth state and logout function
+  const { isAuthenticated, isAuthReady, configError, logout } = useAuth();
 
-  // Show a loading spinner until the initial authentication check is complete.
   if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
@@ -35,45 +52,19 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
-        {/* Header/Navigation Bar */}
         <header className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-4 shadow-lg">
-          <div className="container mx-auto flex justify-between items-center">
-            {/* App Title/Home Link */}
+          <div className="container mx-auto flex flex-wrap gap-4 justify-between items-center">
             <Link to="/" className="text-3xl font-bold rounded-md px-3 py-1 hover:bg-blue-700 transition-colors">
               MetaSupply
             </Link>
-            {/* Navigation Links */}
             <nav>
-              <ul className="flex space-x-6">
+              <ul className="flex flex-wrap items-center gap-4">
                 {isAuthenticated ? (
-                  // Links for authenticated users
                   <>
+                    <li><Link to="/upload" className={navLink}>Upload</Link></li>
+                    <li><Link to="/my-files" className={navLink}>My Files</Link></li>
+                    <li><Link to="/search" className={navLink}>Search</Link></li>
                     <li>
-                      <Link
-                        to="/upload"
-                        className="text-lg font-medium hover:text-blue-200 transition-colors rounded-md px-3 py-1 hover:bg-blue-700"
-                      >
-                        Upload
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/my-files"
-                        className="text-lg font-medium hover:text-blue-200 transition-colors rounded-md px-3 py-1 hover:bg-blue-700"
-                      >
-                        My Files
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/search"
-                        className="text-lg font-medium hover:text-blue-200 transition-colors rounded-md px-3 py-1 hover:bg-blue-700"
-                      >
-                        Search
-                      </Link>
-                    </li>
-                    <li>
-                      {/* Logout Button */}
                       <button
                         onClick={logout}
                         className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 ease-in-out transform hover:scale-105"
@@ -83,7 +74,6 @@ const AppContent: React.FC = () => {
                     </li>
                   </>
                 ) : (
-                  // Link for unauthenticated users (Login)
                   <li>
                     <Link
                       to="/login"
@@ -98,54 +88,22 @@ const AppContent: React.FC = () => {
           </div>
         </header>
 
-        {/* Main content area for routing */}
         <main className="flex-grow container mx-auto p-6">
+          {configError && (
+            <div className="max-w-3xl mx-auto mb-6">
+              <Alert kind="error">{configError}</Alert>
+            </div>
+          )}
           <Routes>
-            {/* Home Page Route */}
-            <Route
-              path="/"
-              element={
-                <div className="text-center py-20">
-                  <h1 className="text-5xl font-extrabold text-gray-800 mb-6">
-                    Welcome to MetaSupply
-                  </h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Your decentralized platform for managing file metadata and versioning on the Internet Computer.
-                  </p>
-                  {!isAuthenticated && (
-                    <Link
-                      to="/login"
-                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
-                    >
-                      Get Started - Login
-                    </Link>
-                  )}
-                  {isAuthenticated && (
-                    <p className="text-lg text-gray-700">
-                      You are logged in! Navigate using the menu above.
-                    </p>
-                  )}
-                </div>
-              }
-            />
-            {/* Login Page Route */}
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
-            {/* Protected Routes: only accessible if isAuthenticated is true */}
-            {isAuthenticated ? (
-              <>
-                <Route path="/upload" element={<UploadPage />} />
-                <Route path="/my-files" element={<MyFilesPage />} />
-                <Route path="/search" element={<SearchPage />} />
-              </>
-            ) : (
-              // If not authenticated, redirect any attempt to access protected routes to login.
-              // The `*` path acts as a catch-all for any route not explicitly defined above.
-              <Route path="*" element={<LoginPage />} />
-            )}
+            <Route path="/upload" element={<RequireAuth><UploadPage /></RequireAuth>} />
+            <Route path="/my-files" element={<RequireAuth><MyFilesPage /></RequireAuth>} />
+            <Route path="/search" element={<RequireAuth><SearchPage /></RequireAuth>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
-        {/* Footer */}
         <footer className="bg-gray-800 text-white p-4 text-center shadow-inner">
           <div className="container mx-auto">
             <p>&copy; {new Date().getFullYear()} MetaSupply. All rights reserved.</p>
@@ -156,5 +114,11 @@ const AppContent: React.FC = () => {
     </Router>
   );
 };
+
+const App: React.FC = () => (
+  <AuthProvider>
+    <AppContent />
+  </AuthProvider>
+);
 
 export default App;

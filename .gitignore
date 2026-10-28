@@ -11,7 +11,7 @@
 .dfx/
 
 # generated files
-**/declarations/
+**/declarations/*/index.*
 
 # rust
 target/
@@ -23,3 +23,6 @@ dist/
 
 # environment variables
 .env
+
+# local tooling
+.claude/

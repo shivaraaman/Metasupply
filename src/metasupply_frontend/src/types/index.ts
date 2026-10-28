@@ -1,15 +1,14 @@
-// metasupply/src/metasupply_frontend/src/types/index.ts
+import type { Principal } from "@dfinity/principal";
 
-import { Principal } from "@dfinity/principal";
-
-// Define the TypeScript interface for FileMetadata, matching the Rust struct
+/** Mirrors the backend's FileMetadata, with `opt text` unwrapped to an optional string. */
 export interface FileMetadata {
-  id: string; // SHA-256 hash
+  id: string;
   filename: string;
   model: string;
   dataset: string;
   prompt: string;
-  previous_hash?: string; // Optional previous hash for versioning
+  previous_hash?: string;
   creator: Principal;
-  timestamp: bigint; // Use bigint for u64/u128 from Rust
+  /** Nanoseconds since the Unix epoch. */
+  timestamp: bigint;
 }

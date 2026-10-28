@@ -1,5 +1,3 @@
-// metasupply/src/metasupply_frontend/src/components/LoadingSpinner.tsx
-
 import React from 'react';
 
 const LoadingSpinner: React.FC = () => {

@@ -1,4 +1,3 @@
-// metasupply/src/metasupply_frontend/tsconfig.json
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -7,7 +6,6 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -15,22 +13,18 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    // Add "node" to types for process.env
-    
-    // Add baseUrl and paths to resolve module imports like 'declarations/...'
     "baseUrl": ".",
     "paths": {
-      "@dfinity/*": ["./node_modules/@dfinity/*"],
-      // Keep your existing declarations alias if you prefer, or remove if not used in your code
-      "declarations/*": ["../../declarations/*"]
+      // The generated declarations live outside this package, so point their imports at our deps.
+      "@dfinity/*": ["./node_modules/@dfinity/*", "../../node_modules/@dfinity/*"],
+      "declarations/*": ["../declarations/*"]
     },
-    "types": ["node"],
+    "types": ["node"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

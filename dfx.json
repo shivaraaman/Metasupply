@@ -4,12 +4,21 @@
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
       "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
-      "specified_id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+      "specified_id": "rdmx6-jaaaa-aaaaa-aaadq-cai",
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      }
     },
     "metasupply_backend": {
       "type": "rust",
       "package": "metasupply_backend",
-      "candid": "src/metasupply_backend/metasupply_backend.did"
+      "candid": "src/metasupply_backend/metasupply_backend.did",
+      "declarations": {
+        "output": "src/declarations/metasupply_backend",
+        "node_compatibility": false
+      }
     },
     "metasupply_frontend": {
       "type": "assets",
@@ -22,13 +31,10 @@
       ],
       "frontend": {
         "entrypoint": "src/metasupply_frontend/index.html"
-      }
-    }
-  },
-  "defaults": {
-    "build": {
-      "packtool": "",
-      "args": ""
+      },
+      "build": [
+        "npm run build"
+      ]
     }
   },
   "output_env_file": ".env",

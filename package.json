@@ -1,18 +1,16 @@
 {
+  "name": "metasupply",
+  "private": true,
+  "type": "module",
   "engines": {
-    "node": ">=16.0.0",
+    "node": ">=18.0.0",
     "npm": ">=7.0.0"
   },
-  "name": "metasupply",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "generate": "dfx generate metasupply_backend",
-    "prebuild": "npm run generate && npm run prebuild --workspaces --if-present",
-    "pretest": "npm run prebuild --workspaces --if-present",
-    "start": "npm start --workspaces --if-present",
-    "test": "npm test --workspaces --if-present"
+    "start": "npm start --workspaces --if-present"
   },
-  "type": "module",
   "workspaces": [
     "src/metasupply_frontend"
   ]
