@@ -20,8 +20,6 @@
 
     "baseUrl": ".",
     "paths": {
-      // The generated declarations live outside this package, so point their imports at our deps.
-      "@dfinity/*": ["./node_modules/@dfinity/*", "../../node_modules/@dfinity/*"],
       "declarations/*": ["../declarations/*"]
     },
     "types": ["node"]

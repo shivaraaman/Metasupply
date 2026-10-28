@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   backend:
-    name: Build backend canister
+    name: Test and build backend canister
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -25,6 +25,9 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v2
+
+      - name: Run backend tests
+        run: cargo test -p metasupply_backend
 
       - name: Build canister wasm
         run: cargo build --release --target wasm32-unknown-unknown -p metasupply_backend

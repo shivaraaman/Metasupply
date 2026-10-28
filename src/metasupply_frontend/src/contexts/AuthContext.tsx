@@ -1,14 +1,21 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { AuthClient } from "@dfinity/auth-client";
-import type { Principal } from "@dfinity/principal";
-import { createBackendActor, identityProvider, type BackendActor } from "../services/agent";
+import { AuthClient } from "@icp-sdk/auth/client";
+import type { Principal } from "@icp-sdk/core/principal";
+import {
+  configError,
+  createBackendActor,
+  host,
+  isMainnet,
+  localIdentityProvider,
+  type BackendActor,
+} from "../services/agent";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isAuthReady: boolean;
   principal: Principal | null;
-  backendActor: BackendActor | null;
-  /** Set when the backend cannot be reached, e.g. a missing canister ID. */
+  /** Signed with the user's identity when logged in, anonymous otherwise; null if unconfigured. */
+  actor: BackendActor | null;
   configError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
@@ -16,68 +23,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const authClient = new AuthClient({
+  identityProvider: localIdentityProvider,
+  agentOptions: { host, shouldFetchRootKey: !isMainnet },
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authClient, setAuthClient] = useState<AuthClient | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [principal, setPrincipal] = useState<Principal | null>(null);
-  const [backendActor, setBackendActor] = useState<BackendActor | null>(null);
-  const [configError, setConfigError] = useState<string | null>(null);
+  const [actor, setActor] = useState<BackendActor | null>(null);
+  const [error, setError] = useState<string | null>(configError);
 
-  const syncState = useCallback(async (client: AuthClient) => {
-    const authenticated = await client.isAuthenticated();
-    setIsAuthenticated(authenticated);
-    if (!authenticated) {
-      setPrincipal(null);
-      setBackendActor(null);
-      return;
-    }
-    const identity = client.getIdentity();
-    setPrincipal(identity.getPrincipal());
+  const syncState = useCallback(async () => {
+    const identity = authClient.isAuthenticated() ? await authClient.getIdentity() : undefined;
+    setPrincipal(identity ? identity.getPrincipal() : null);
+    if (configError) return;
     try {
-      setBackendActor(await createBackendActor(identity));
-      setConfigError(null);
-    } catch (error) {
-      console.error("Could not create backend actor:", error);
-      setBackendActor(null);
-      setConfigError(error instanceof Error ? error.message : String(error));
+      setActor(await createBackendActor(identity));
+    } catch (err) {
+      setActor(null);
+      setError(err instanceof Error ? err.message : String(err));
     }
   }, []);
 
   useEffect(() => {
-    AuthClient.create()
-      .then(async (client) => {
-        setAuthClient(client);
-        await syncState(client);
-      })
-      .catch((error) => console.error("Error initializing AuthClient:", error))
+    syncState()
+      .catch((err) => console.error("Could not restore the session:", err))
       .finally(() => setIsAuthReady(true));
+    // Picks up sign-ins, sign-outs and expiry, including from other tabs.
+    return authClient.subscribe(() => void syncState());
   }, [syncState]);
 
   const login = useCallback(async () => {
-    if (!authClient) return;
-    await new Promise<void>((resolve) => {
-      authClient.login({
-        identityProvider,
-        maxTimeToLive: BigInt(7 * 24 * 60 * 60) * 1_000_000_000n,
-        onSuccess: () => syncState(authClient).then(resolve),
-        onError: (error) => {
-          console.error("Internet Identity login failed:", error);
-          resolve();
-        },
-      });
-    });
-  }, [authClient, syncState]);
+    try {
+      await authClient.signIn({ maxTimeToLive: BigInt(7 * 24 * 60 * 60) * 1_000_000_000n });
+    } catch (err) {
+      console.error("Internet Identity login failed:", err);
+    }
+    await syncState();
+  }, [syncState]);
 
   const logout = useCallback(async () => {
-    if (!authClient) return;
-    await authClient.logout();
-    await syncState(authClient);
-  }, [authClient, syncState]);
+    await authClient.signOut();
+    await syncState();
+  }, [syncState]);
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, isAuthReady, principal, backendActor, configError, login, logout }}
+      value={{
+        isAuthenticated: principal !== null,
+        isAuthReady,
+        principal,
+        actor,
+        configError: error,
+        login,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

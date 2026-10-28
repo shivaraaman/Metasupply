@@ -1,15 +1,30 @@
-type FileMetadata = record {
-  id : text;
-  model : text;
-  creator : principal;
-  dataset : text;
-  filename : text;
+type Document = record {
+  title : text;
+  owner : principal;
+  hash : text;
+  description : text;
+  file_name : text;
+  file_size : nat64;
+  author : text;
+  version : nat32;
   previous_hash : opt text;
-  timestamp : nat64;
-  prompt : text;
+  registered_at : nat64;
 };
-type Result = variant { Ok : text; Err : text };
-service : () -> {
-  get_all_files : () -> (vec FileMetadata) query;
-  upload_file : (text, text, text, text, text, opt text) -> (Result);
+type RegisterArgs = record {
+  title : text;
+  hash : text;
+  description : text;
+  file_name : text;
+  file_size : nat64;
+  author : text;
+  previous_hash : opt text;
+};
+type RegisterError = variant { AlreadyRegistered : Document; Rejected : text };
+type Result = variant { Ok : Document; Err : RegisterError };
+service : {
+  get_document : (text) -> (opt Document) query;
+  get_history : (text) -> (vec Document) query;
+  get_my_documents : () -> (vec Document) query;
+  register : (RegisterArgs) -> (Result);
+  total_documents : () -> (nat64) query;
 }

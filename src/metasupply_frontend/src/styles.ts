@@ -3,8 +3,3 @@ export const inputClass =
 
 export const primaryButtonClass =
   "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed";
-
-export const thClass = "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
-
-export const qrButtonClass =
-  "text-purple-600 hover:text-purple-900 transition-colors py-1 px-3 rounded-md bg-purple-100 hover:bg-purple-200";

@@ -10,13 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dfinity/agent": "^0.18.1",
-    "@dfinity/auth-client": "^0.18.1",
-    "@dfinity/candid": "^0.18.1",
-    "@dfinity/identity": "^0.18.1",
-    "@dfinity/principal": "^0.18.1",
-    "buffer": "^6.0.3",
-    "js-sha256": "^0.9.0",
+    "@icp-sdk/auth": "^11.1.0",
+    "@icp-sdk/core": "^6.1.1",
     "qrcode.react": "^3.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

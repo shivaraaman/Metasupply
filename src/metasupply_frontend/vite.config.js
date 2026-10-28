@@ -43,6 +43,6 @@ export default defineConfig({
         replacement: fileURLToPath(new URL('../declarations', import.meta.url)),
       },
     ],
-    dedupe: ['@dfinity/agent'],
+    dedupe: ['@icp-sdk/core'],
   },
 });

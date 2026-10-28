@@ -26,3 +26,4 @@ dist/
 
 # local tooling
 .claude/
+**/declarations/*/*.did
