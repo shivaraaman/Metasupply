@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { formatBytes, hashFile } from "../services/documents";
+import { FileCheck, Upload } from "./icons";
 
 export interface HashedFile {
   file: File;
@@ -49,23 +50,33 @@ const FileDrop: React.FC<FileDropProps> = ({ onHashed, prompt = "Choose a file o
           setDragging(false);
           handleFile(e.dataTransfer.files[0]);
         }}
-        className={`w-full border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400 bg-gray-50"
+        className={`group relative w-full overflow-hidden rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 ${
+          dragging
+            ? "scale-[1.01] border-brand-cyan bg-brand-cyan/10"
+            : "border-white/15 bg-white/[0.02] hover:border-brand-violet/60 hover:bg-brand-violet/[0.06]"
         }`}
       >
+        {hashing && (
+          <span className="absolute inset-x-0 h-0.5 animate-scan bg-gradient-to-r from-transparent via-brand-cyan to-transparent" />
+        )}
+        <span
+          className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-cyan/20 to-brand-magenta/20 text-white transition-transform duration-300 group-hover:-translate-y-1 ${
+            dragging ? "-translate-y-1" : ""
+          }`}
+        >
+          {file && !hashing ? <FileCheck className="h-6 w-6" /> : <Upload className="h-6 w-6" />}
+        </span>
         {file ? (
           <>
-            <p className="font-semibold text-gray-800 break-all">{file.name}</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="break-all font-semibold text-white">{file.name}</p>
+            <p className="mt-1 text-sm text-slate-400">
               {formatBytes(file.size)} · {hashing ? "Computing fingerprint…" : "Click to choose a different file"}
             </p>
           </>
         ) : (
           <>
-            <p className="font-semibold text-gray-700">{prompt}</p>
-            <p className="text-sm text-gray-500 mt-1">
-              The file stays on your computer. Only its SHA-256 fingerprint is used.
-            </p>
+            <p className="font-semibold text-white">{prompt}</p>
+            <p className="mt-1 text-sm text-slate-400">The file stays on your device. Only its fingerprint is used.</p>
           </>
         )}
       </button>
@@ -78,7 +89,7 @@ const FileDrop: React.FC<FileDropProps> = ({ onHashed, prompt = "Choose a file o
           e.target.value = "";
         }}
       />
-      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+      {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
     </div>
   );
 };

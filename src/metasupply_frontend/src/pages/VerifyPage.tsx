@@ -8,7 +8,7 @@ import VersionTimeline from "../components/VersionTimeline";
 import ShareLink from "../components/ShareLink";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Alert from "../components/Alert";
-import { inputClass } from "../styles";
+import { ArrowRight, Close, ShieldCheck } from "../components/icons";
 
 type Lookup =
   | { state: "idle" }
@@ -53,33 +53,33 @@ const VerifyPage: React.FC = () => {
   const latest = lookup.state === "done" ? lookup.versions[lookup.versions.length - 1] : undefined;
 
   return (
-    <div className="max-w-4xl mx-auto mt-6 space-y-8">
-      <section className="bg-white p-8 rounded-lg shadow-xl">
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-2">Verify a document</h2>
-        <p className="text-gray-600 mb-6">
-          Check whether a file is registered, when it was registered, by whom, and whether newer versions exist.
-          Anyone can verify; no login is needed.
+    <div className="mx-auto max-w-5xl space-y-8">
+      <section className="card">
+        <p className="eyebrow">Verify</p>
+        <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-white">Is this the original?</h1>
+        <p className="mt-3 max-w-2xl text-slate-400">
+          Check whether a file is registered, when, by whom, how it was made, and whether newer versions exist. Anyone
+          can verify; no login needed.
         </p>
-        <FileDrop
-          prompt="Choose the file to check, or drag it here"
-          onHashed={(result) =>
-            result && navigate(`/verify/${result.hash}`, { state: { fileName: result.file.name } })
-          }
-        />
-        <form onSubmit={submitHash} className="mt-4 flex flex-col sm:flex-row gap-3">
+        <div className="mt-8">
+          <FileDrop
+            prompt="Choose the file to check, or drag it here"
+            onHashed={(result) =>
+              result && navigate(`/verify/${result.hash}`, { state: { fileName: result.file.name } })
+            }
+          />
+        </div>
+        <form onSubmit={submitHash} className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
             value={hashInput}
             onChange={(e) => setHashInput(e.target.value)}
             placeholder="…or paste a SHA-256 fingerprint"
-            className={`${inputClass} font-mono text-sm`}
+            className="input font-mono text-sm"
+            aria-label="SHA-256 fingerprint"
           />
-          <button
-            type="submit"
-            disabled={!isSha256(hashInput)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Look up
+          <button type="submit" disabled={!isSha256(hashInput)} className="btn-primary shrink-0">
+            Look up <ArrowRight className="h-4 w-4" />
           </button>
         </form>
       </section>
@@ -93,47 +93,62 @@ const VerifyPage: React.FC = () => {
       {lookup.state === "error" && <Alert kind="error">{lookup.message}</Alert>}
 
       {lookup.state === "done" && !match && (
-        <section className="bg-white p-8 rounded-lg shadow-xl border-l-8 border-red-500">
-          <h3 className="text-2xl font-bold text-red-700">Not registered</h3>
-          <p className="text-gray-700 mt-2">
-            {checkedFileName ? <>“{checkedFileName}” is</> : <>This fingerprint is</>} not on record. Either it was
-            never registered, or the file has been changed. Changing even one character gives a completely different
-            fingerprint.
-          </p>
-          <p className="font-mono text-xs text-gray-500 mt-4 break-all">{hash}</p>
+        <section className="card border-rose-500/30 bg-rose-500/[0.06]">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-300">
+              <Close className="h-6 w-6" />
+            </span>
+            <div>
+              <h2 className="font-display text-2xl font-bold text-rose-200">Not registered</h2>
+              <p className="mt-2 text-slate-300">
+                {checkedFileName ? <>“{checkedFileName}” is</> : <>This fingerprint is</>} not on record. Either it
+                was never registered, or the file has been changed. Changing even one character gives a completely
+                different fingerprint.
+              </p>
+              <p className="mt-4 break-all font-mono text-xs text-slate-500">{hash}</p>
+            </div>
+          </div>
         </section>
       )}
 
       {match && latest && lookup.state === "done" && (
         <>
-          <section className="bg-white p-8 rounded-lg shadow-xl border-l-8 border-green-500">
-            <h3 className="text-2xl font-bold text-green-700">Registered</h3>
-            <p className="text-gray-700 mt-2">
-              {checkedFileName ? <>“{checkedFileName}” matches</> : <>This fingerprint matches</>} version{" "}
-              {match.version} of “{match.title}”, recorded on the Internet Computer and unchanged since.
-            </p>
+          <section className="card border-emerald-400/25">
+            <div className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-300 shadow-[0_0_30px_-6px_rgba(52,211,153,0.6)]">
+                <ShieldCheck className="h-6 w-6" />
+              </span>
+              <div>
+                <h2 className="font-display text-2xl font-bold text-emerald-200">Registered</h2>
+                <p className="mt-2 text-slate-300">
+                  {checkedFileName ? <>“{checkedFileName}” matches</> : <>This fingerprint matches</>} version{" "}
+                  {match.version} of “{match.title}”, recorded on the Internet Computer and unchanged since.
+                </p>
+              </div>
+            </div>
             {latest.hash !== match.hash && (
-              <div className="mt-4">
+              <div className="mt-5">
                 <Alert kind="warning">
                   A newer version exists (version {latest.version}).{" "}
-                  <Link to={`/verify/${latest.hash}`} className="underline font-semibold">
+                  <Link to={`/verify/${latest.hash}`} className="font-semibold underline">
                     View the latest version
                   </Link>
                 </Alert>
               </div>
             )}
-            <div className="mt-6 grid md:grid-cols-3 gap-8">
-              <div className="md:col-span-2">
-                <DocumentDetails document={match} />
-              </div>
+            <div className="mt-8 grid gap-8 md:grid-cols-[1fr_auto]">
+              <DocumentDetails document={match} />
               <ShareLink hash={match.hash} />
             </div>
           </section>
 
-          <section className="bg-white p-8 rounded-lg shadow-xl">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">
-              Version history ({lookup.versions.length} {lookup.versions.length === 1 ? "version" : "versions"})
-            </h3>
+          <section className="card">
+            <h2 className="mb-6 font-display text-2xl font-bold text-white">
+              Version history{" "}
+              <span className="text-base font-normal text-slate-400">
+                ({lookup.versions.length} {lookup.versions.length === 1 ? "version" : "versions"})
+              </span>
+            </h2>
             <VersionTimeline versions={lookup.versions} current={match.hash} />
           </section>
         </>

@@ -1,10 +1,159 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Add Inter font */
-body {
-  font-family: 'Inter', sans-serif;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-slate-200 antialiased;
+    /* Soft brand-coloured glows behind everything. */
+    background-image:
+      radial-gradient(60rem 40rem at 85% -10%, rgba(124, 77, 255, 0.18), transparent 60%),
+      radial-gradient(50rem 35rem at -10% 20%, rgba(41, 171, 226, 0.12), transparent 60%),
+      radial-gradient(45rem 30rem at 60% 110%, rgba(237, 30, 121, 0.10), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(124, 77, 255, 0.45);
+    color: white;
+  }
+
+  select option {
+    background: #0a0d17;
+    color: #e2e8f0;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/[0.08] bg-white/[0.035] backdrop-blur-xl;
+  }
+
+  .card {
+    @apply glass rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.8)] sm:p-8;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-cyan via-brand-violet to-brand-magenta bg-clip-text text-transparent;
+  }
+
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.25em] text-brand-cyan;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-brand-cyan via-brand-violet to-brand-magenta bg-[length:200%_200%] text-white shadow-[0_8px_30px_-8px_rgba(124,77,255,0.7)] hover:-translate-y-0.5 hover:bg-right hover:shadow-[0_12px_40px_-8px_rgba(237,30,121,0.6)] disabled:hover:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/15 bg-white/[0.04] text-slate-100 hover:border-white/30 hover:bg-white/[0.09];
+  }
+
+  .btn-sm {
+    @apply px-4 py-2;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-ink-900/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 transition focus:border-brand-violet/60 focus:outline-none focus:ring-2 focus:ring-brand-violet/30;
+  }
+
+  .label {
+    @apply mb-2 block text-sm font-medium text-slate-300;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+}
+
+/* Scroll-in animation used by <Reveal>. */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* The rotating 3D block in the hero. */
+.cube-scene {
+  perspective: 1100px;
+}
+.cube {
+  --size: 220px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  transform-style: preserve-3d;
+  animation: cube-spin 26s linear infinite;
+}
+.cube-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  /* Solid faces, so the back of the block doesn't show through the front. */
+  background:
+    linear-gradient(145deg, rgba(41, 171, 226, 0.35), rgba(124, 77, 255, 0.3) 50%, rgba(237, 30, 121, 0.32)),
+    #0d1020;
+  box-shadow: inset 0 0 40px rgba(124, 77, 255, 0.35);
+}
+.cube-face:nth-child(1) { transform: rotateY(0deg) translateZ(calc(var(--size) / 2)); }
+.cube-face:nth-child(2) { transform: rotateY(90deg) translateZ(calc(var(--size) / 2)); }
+.cube-face:nth-child(3) { transform: rotateY(180deg) translateZ(calc(var(--size) / 2)); }
+.cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--size) / 2)); }
+.cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--size) / 2)); }
+.cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--size) / 2)); }
+
+@keyframes cube-spin {
+  from { transform: rotateX(-18deg) rotateY(0deg); }
+  to { transform: rotateX(-18deg) rotateY(360deg); }
+}
+
+.orbit {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  animation: orbit-spin 18s linear infinite;
+}
+@keyframes orbit-spin {
+  from { transform: rotateX(72deg) rotateZ(0deg); }
+  to { transform: rotateX(72deg) rotateZ(360deg); }
+}
+
+@media (max-width: 640px) {
+  .cube { --size: 160px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
 }

@@ -18,15 +18,11 @@ const ShareLink: React.FC<{ hash: string }> = ({ hash }) => {
   };
 
   return (
-    <div className="text-center">
-      <QRCodeDisplay value={url} size={180} />
-      <p className="text-sm text-gray-500 mt-2">Scan to verify this version</p>
-      <button
-        type="button"
-        onClick={copy}
-        className="mt-3 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md"
-      >
-        {copied ? "Link copied" : "Copy verification link"}
+    <div className="flex flex-col items-center text-center">
+      <QRCodeDisplay value={url} size={168} />
+      <p className="mt-3 text-sm text-slate-400">Scan to verify this version</p>
+      <button type="button" onClick={copy} className="btn-ghost btn-sm mt-3">
+        {copied ? "Link copied ✓" : "Copy verification link"}
       </button>
     </div>
   );

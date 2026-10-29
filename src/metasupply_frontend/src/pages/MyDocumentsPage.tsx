@@ -5,6 +5,7 @@ import { getMyDocuments, groupIntoChains, type DocumentRecord } from "../service
 import VersionTimeline from "../components/VersionTimeline";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Alert from "../components/Alert";
+import { ArrowRight, Layers } from "../components/icons";
 
 const MyDocumentsPage: React.FC = () => {
   const { actor, principal } = useAuth();
@@ -20,7 +21,7 @@ const MyDocumentsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-lg mx-auto mt-10">
+      <div className="mx-auto mt-10 max-w-lg">
         <Alert kind="error">{error}</Alert>
       </div>
     );
@@ -28,48 +29,46 @@ const MyDocumentsPage: React.FC = () => {
 
   if (!chains) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-800">My documents</h2>
-          {principal && (
-            <p className="text-xs text-gray-500 font-mono mt-1 break-all">Account: {principal.toText()}</p>
-          )}
+          <p className="eyebrow">Creator panel</p>
+          <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-white">My documents</h1>
+          {principal && <p className="mt-2 break-all font-mono text-xs text-slate-500">Account: {principal.toText()}</p>}
         </div>
-        <Link to="/register" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md">
-          Register a document
+        <Link to="/register" className="btn-primary">
+          Register a document <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 
       {chains.length === 0 ? (
-        <div className="bg-white p-8 rounded-lg shadow-xl text-center text-gray-600">
-          You haven't registered any documents yet.{" "}
-          <Link to="/register" className="text-blue-600 hover:underline">Register your first one.</Link>
+        <div className="card text-center">
+          <Layers className="mx-auto h-10 w-10 text-brand-violet" />
+          <p className="mt-4 text-slate-300">You haven't registered any documents yet.</p>
+          <Link to="/register" className="btn-ghost mt-6">Register your first one</Link>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {chains.map((versions) => {
             const latest = versions[versions.length - 1];
             return (
-              <section key={versions[0].hash} className="bg-white p-6 rounded-lg shadow-xl">
-                <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+              <section key={versions[0].hash} className="card">
+                <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-800 break-words">{latest.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {versions.length} {versions.length === 1 ? "version" : "versions"}
+                    <h2 className="break-words font-display text-xl font-bold text-white">{latest.title}</h2>
+                    <p className="text-sm text-slate-400">
+                      {versions.length} {versions.length === 1 ? "version" : "versions"} · {latest.content_type}
+                      {latest.ai && " · AI-generated"}
                     </p>
                   </div>
-                  <Link
-                    to={`/register?previous=${latest.hash}`}
-                    className="text-blue-600 hover:text-blue-900 py-1 px-3 rounded-md bg-blue-100 hover:bg-blue-200 font-medium"
-                  >
+                  <Link to={`/register?previous=${latest.hash}`} className="btn-ghost btn-sm">
                     Register new version
                   </Link>
                 </div>
