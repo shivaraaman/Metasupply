@@ -20,6 +20,12 @@ export const localIdentityProvider =
       }
     : undefined;
 
+/**
+ * On a local replica without Internet Identity, "log in" creates a throwaway key in the browser instead,
+ * so the register flow can be tried locally. Never enabled in mainnet builds.
+ */
+export const localTestLogin = !isMainnet && !localIdentityProvider;
+
 export const configError = backendCanisterId
   ? null
   : "The backend canister ID is not configured, so documents cannot be registered or verified yet. " +

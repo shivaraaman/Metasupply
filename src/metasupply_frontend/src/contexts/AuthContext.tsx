@@ -1,5 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AuthClient } from "@icp-sdk/auth/client";
+import type { Identity } from "@icp-sdk/core/agent";
+import { Ed25519KeyIdentity } from "@icp-sdk/core/identity";
 import type { Principal } from "@icp-sdk/core/principal";
 import {
   configError,
@@ -7,6 +9,7 @@ import {
   host,
   isMainnet,
   localIdentityProvider,
+  localTestLogin,
   type BackendActor,
 } from "../services/agent";
 
@@ -33,9 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [actor, setActor] = useState<BackendActor | null>(null);
   const [error, setError] = useState<string | null>(configError);
+  /** Throwaway key used instead of Internet Identity on a local replica (see localTestLogin). */
+  const testIdentity = useRef<Identity>();
 
   const syncState = useCallback(async () => {
-    const identity = authClient.isAuthenticated() ? await authClient.getIdentity() : undefined;
+    const identity =
+      testIdentity.current ?? (authClient.isAuthenticated() ? await authClient.getIdentity() : undefined);
     setPrincipal(identity ? identity.getPrincipal() : null);
     if (configError) return;
     try {
@@ -55,16 +61,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [syncState]);
 
   const login = useCallback(async () => {
-    try {
-      await authClient.signIn({ maxTimeToLive: BigInt(7 * 24 * 60 * 60) * 1_000_000_000n });
-    } catch (err) {
-      console.error("Internet Identity login failed:", err);
+    if (localTestLogin) {
+      testIdentity.current = Ed25519KeyIdentity.generate();
+    } else {
+      try {
+        await authClient.signIn({ maxTimeToLive: BigInt(7 * 24 * 60 * 60) * 1_000_000_000n });
+      } catch (err) {
+        console.error("Internet Identity login failed:", err);
+      }
     }
     await syncState();
   }, [syncState]);
 
   const logout = useCallback(async () => {
-    await authClient.signOut();
+    if (testIdentity.current) {
+      testIdentity.current = undefined;
+    } else {
+      await authClient.signOut();
+    }
     await syncState();
   }, [syncState]);
 

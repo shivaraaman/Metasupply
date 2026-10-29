@@ -2,6 +2,7 @@ import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { LogoMark } from "../components/icons";
+import { localTestLogin } from "../services/agent";
 
 const LoginPage: React.FC = () => {
   const { isAuthenticated, isAuthReady, login } = useAuth();
@@ -21,8 +22,13 @@ const LoginPage: React.FC = () => {
           new versions of your work.
         </p>
         <button onClick={login} disabled={!isAuthReady} className="btn-primary relative mt-8 w-full py-3.5 text-base">
-          {isAuthReady ? "Log in with Internet Identity" : "Loading…"}
+          {!isAuthReady ? "Loading…" : localTestLogin ? "Log in with a local test identity" : "Log in with Internet Identity"}
         </button>
+        {localTestLogin && (
+          <p className="relative mt-3 text-xs text-amber-200/80">
+            Local development: Internet Identity isn't deployed here, so a temporary test key is used instead.
+          </p>
+        )}
         <p className="relative mt-6 text-sm text-slate-500">
           Just checking a file?{" "}
           <Link to="/verify" className="text-brand-cyan hover:underline">Verify without logging in</Link>
