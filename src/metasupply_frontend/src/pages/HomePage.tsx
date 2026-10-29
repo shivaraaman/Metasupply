@@ -6,7 +6,7 @@ import { getTotalDocuments } from "../services/documents";
 const steps = [
   {
     title: "1. Register",
-    text: "Pick your file. Your browser computes its SHA-256 fingerprint. The fingerprint, title, author and the blockchain's date and time are recorded permanently.",
+    text: "Pick your file. Your browser computes its SHA-256 fingerprint. The fingerprint, title, author, the blockchain's date and time, and for AI content the model, tool, prompt and dataset, are recorded permanently.",
   },
   {
     title: "2. Update",
@@ -30,11 +30,12 @@ const HomePage: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       <section className="text-center py-14">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-6">
-          Prove when a document existed
+          Prove where your content came from
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          MetaSupply records a tamper-proof fingerprint of your papers and files on the Internet Computer blockchain,
-          with the date, time, author and every later version. Records can never be edited or deleted.
+          MetaSupply records a tamper-proof fingerprint of papers, files and AI-generated content on the Internet
+          Computer blockchain: when it was created, by whom, which AI model, prompt and dataset were used, and every
+          later version. Records can never be edited or deleted.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Link

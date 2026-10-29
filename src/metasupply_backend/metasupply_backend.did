@@ -1,7 +1,27 @@
+type AiDetails = record {
+  model : text;
+  dataset : text;
+  tool : text;
+  prompt : text;
+  dataset_license : DatasetLicense;
+};
+type ContentType = variant {
+  Code;
+  Text;
+  Image;
+  Document;
+  Audio;
+  Other;
+  Video;
+  Dataset;
+};
+type DatasetLicense = variant { Licensed; Open; Private; Unknown; Scraped };
 type Document = record {
+  ai : opt AiDetails;
   title : text;
   owner : principal;
   hash : text;
+  content_type : ContentType;
   description : text;
   file_name : text;
   file_size : nat64;
@@ -11,8 +31,10 @@ type Document = record {
   registered_at : nat64;
 };
 type RegisterArgs = record {
+  ai : opt AiDetails;
   title : text;
   hash : text;
+  content_type : ContentType;
   description : text;
   file_name : text;
   file_size : nat64;

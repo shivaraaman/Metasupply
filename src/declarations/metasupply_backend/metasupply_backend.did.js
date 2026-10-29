@@ -1,8 +1,34 @@
 export const idlFactory = ({ IDL }) => {
+  const DatasetLicense = IDL.Variant({
+    'Licensed' : IDL.Null,
+    'Open' : IDL.Null,
+    'Private' : IDL.Null,
+    'Unknown' : IDL.Null,
+    'Scraped' : IDL.Null,
+  });
+  const AiDetails = IDL.Record({
+    'model' : IDL.Text,
+    'dataset' : IDL.Text,
+    'tool' : IDL.Text,
+    'prompt' : IDL.Text,
+    'dataset_license' : DatasetLicense,
+  });
+  const ContentType = IDL.Variant({
+    'Code' : IDL.Null,
+    'Text' : IDL.Null,
+    'Image' : IDL.Null,
+    'Document' : IDL.Null,
+    'Audio' : IDL.Null,
+    'Other' : IDL.Null,
+    'Video' : IDL.Null,
+    'Dataset' : IDL.Null,
+  });
   const Document = IDL.Record({
+    'ai' : IDL.Opt(AiDetails),
     'title' : IDL.Text,
     'owner' : IDL.Principal,
     'hash' : IDL.Text,
+    'content_type' : ContentType,
     'description' : IDL.Text,
     'file_name' : IDL.Text,
     'file_size' : IDL.Nat64,
@@ -12,8 +38,10 @@ export const idlFactory = ({ IDL }) => {
     'registered_at' : IDL.Nat64,
   });
   const RegisterArgs = IDL.Record({
+    'ai' : IDL.Opt(AiDetails),
     'title' : IDL.Text,
     'hash' : IDL.Text,
+    'content_type' : ContentType,
     'description' : IDL.Text,
     'file_name' : IDL.Text,
     'file_size' : IDL.Nat64,

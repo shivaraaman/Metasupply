@@ -39,7 +39,8 @@ const VersionTimeline: React.FC<VersionTimelineProps> = ({ versions, current }) 
             </div>
             <p className="text-gray-700 mt-1 break-words">{doc.title}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {formatTimestamp(doc.registered_at)} · by {doc.author}
+              {formatTimestamp(doc.registered_at)} · by {doc.author} · {doc.content_type}
+              {doc.ai && <> · AI: {doc.ai.model}</>}
             </p>
             <p className="text-xs text-gray-400 font-mono mt-1">{shortHash(doc.hash)}</p>
           </Link>

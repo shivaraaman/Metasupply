@@ -1,12 +1,40 @@
 import type { BackendActor } from "./agent";
 import type {
+  AiDetails as CandidAiDetails,
+  ContentType,
+  DatasetLicense,
   Document as CandidDocument,
   RegisterError,
 } from "declarations/metasupply_backend/metasupply_backend.did";
 
-/** A registered file, with Candid's `opt text` unwrapped. */
-export interface DocumentRecord extends Omit<CandidDocument, "previous_hash"> {
+export const CONTENT_TYPES = ["Document", "Image", "Text", "Code", "Audio", "Video", "Dataset", "Other"] as const;
+export type ContentTypeName = (typeof CONTENT_TYPES)[number];
+
+export const DATASET_LICENSES = ["Open", "Licensed", "Private", "Scraped", "Unknown"] as const;
+export type DatasetLicenseName = (typeof DATASET_LICENSES)[number];
+
+export const DATASET_LICENSE_LABELS: Record<DatasetLicenseName, string> = {
+  Open: "Open (public domain or open licence)",
+  Licensed: "Licensed (permission obtained)",
+  Private: "Private (own or company data)",
+  Scraped: "Scraped from the web without permission",
+  Unknown: "Unknown",
+};
+
+export interface AiInfo {
+  model: string;
+  tool: string;
+  prompt: string;
+  dataset: string;
+  datasetLicense: DatasetLicenseName;
+}
+
+/** A registered file, with Candid options and variants turned into plain values. */
+export interface DocumentRecord
+  extends Omit<CandidDocument, "previous_hash" | "content_type" | "ai"> {
   previous_hash?: string;
+  content_type: ContentTypeName;
+  ai?: AiInfo;
 }
 
 export interface RegisterInput {
@@ -16,6 +44,8 @@ export interface RegisterInput {
   description: string;
   fileName: string;
   fileSize: number;
+  contentType: ContentTypeName;
+  ai?: AiInfo;
   previousHash?: string;
 }
 
@@ -23,9 +53,29 @@ export type RegisterOutcome =
   | { kind: "registered"; document: DocumentRecord }
   | { kind: "alreadyRegistered"; document: DocumentRecord };
 
-const fromCandid = ({ previous_hash, ...rest }: CandidDocument): DocumentRecord => ({
+// Candid variants arrive as single-key objects, e.g. { Image: null }.
+const variantName = <T extends string>(variant: object) => Object.keys(variant)[0] as T;
+const toVariant = <V>(name: string) => ({ [name]: null }) as V;
+
+const fromCandid = ({ previous_hash, content_type, ai, ...rest }: CandidDocument): DocumentRecord => ({
   ...rest,
   previous_hash: previous_hash[0],
+  content_type: variantName<ContentTypeName>(content_type),
+  ai: ai[0] && {
+    model: ai[0].model,
+    tool: ai[0].tool,
+    prompt: ai[0].prompt,
+    dataset: ai[0].dataset,
+    datasetLicense: variantName<DatasetLicenseName>(ai[0].dataset_license),
+  },
+});
+
+const aiToCandid = (ai: AiInfo): CandidAiDetails => ({
+  model: ai.model,
+  tool: ai.tool,
+  prompt: ai.prompt,
+  dataset: ai.dataset,
+  dataset_license: toVariant<DatasetLicense>(ai.datasetLicense),
 });
 
 const describe = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -58,6 +108,8 @@ export const registerDocument = async (
       description: input.description,
       file_name: input.fileName,
       file_size: BigInt(input.fileSize),
+      content_type: toVariant<ContentType>(input.contentType),
+      ai: input.ai ? [aiToCandid(input.ai)] : [],
       previous_hash: input.previousHash ? [input.previousHash] : [],
     })
   );

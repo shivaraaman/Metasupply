@@ -1,7 +1,8 @@
 //! MetaSupply: a public, append-only registry of file fingerprints.
 //!
 //! The browser computes the SHA-256 hash of a file and registers it here together with a
-//! title, author and the Internet Computer's timestamp. Records can never be edited or
+//! title, author and the Internet Computer's timestamp. AI-generated content can also record
+//! the model, tool, prompt and dataset used to make it. Records can never be edited or
 //! deleted. A new version of a file is registered as a new record that points to the
 //! previous one, so anyone holding any version can see the whole history.
 
@@ -16,7 +17,46 @@ const MAX_TITLE_LEN: usize = 200;
 const MAX_AUTHOR_LEN: usize = 100;
 const MAX_DESCRIPTION_LEN: usize = 2000;
 const MAX_FILE_NAME_LEN: usize = 255;
+const MAX_MODEL_LEN: usize = 128;
+const MAX_TOOL_LEN: usize = 128;
+const MAX_PROMPT_LEN: usize = 4000;
+const MAX_DATASET_LEN: usize = 200;
 const MAX_DOCUMENTS_PER_OWNER: usize = 1000;
+
+#[derive(CandidType, Deserialize, Clone, Copy, Debug, PartialEq)]
+pub enum ContentType {
+    Document,
+    Image,
+    Text,
+    Code,
+    Audio,
+    Video,
+    Dataset,
+    Other,
+}
+
+/// Where the training data behind AI-generated content came from.
+#[derive(CandidType, Deserialize, Clone, Copy, Debug, PartialEq)]
+pub enum DatasetLicense {
+    Open,
+    Licensed,
+    Private,
+    Scraped,
+    Unknown,
+}
+
+/// How AI-generated content was made, as declared by the creator.
+#[derive(CandidType, Deserialize, Clone, Debug, PartialEq)]
+pub struct AiDetails {
+    pub model: String,
+    /// App or service used, e.g. "ChatGPT" or "ComfyUI"; may be empty.
+    pub tool: String,
+    /// May be empty.
+    pub prompt: String,
+    /// Name of the training dataset, if known; may be empty.
+    pub dataset: String,
+    pub dataset_license: DatasetLicense,
+}
 
 /// A registered file. Records are never changed once stored.
 #[derive(CandidType, Deserialize, Clone, Debug, PartialEq)]
@@ -29,6 +69,9 @@ pub struct Document {
     pub description: String,
     pub file_name: String,
     pub file_size: u64,
+    pub content_type: ContentType,
+    /// Present when the content was generated with AI.
+    pub ai: Option<AiDetails>,
     /// Internet Identity principal that registered the file.
     pub owner: Principal,
     /// Nanoseconds since the Unix epoch, from the Internet Computer's clock.
@@ -47,6 +90,8 @@ pub struct RegisterArgs {
     pub description: String,
     pub file_name: String,
     pub file_size: u64,
+    pub content_type: ContentType,
+    pub ai: Option<AiDetails>,
     pub previous_hash: Option<String>,
 }
 
@@ -113,6 +158,16 @@ fn clean_text(field: &str, value: &str, max: usize, required: bool) -> Result<St
     Ok(value.to_string())
 }
 
+fn clean_ai_details(ai: &AiDetails) -> Result<AiDetails, String> {
+    Ok(AiDetails {
+        model: clean_text("AI model", &ai.model, MAX_MODEL_LEN, true)?,
+        tool: clean_text("Generation tool", &ai.tool, MAX_TOOL_LEN, false)?,
+        prompt: clean_text("Prompt", &ai.prompt, MAX_PROMPT_LEN, false)?,
+        dataset: clean_text("Dataset", &ai.dataset, MAX_DATASET_LEN, false)?,
+        dataset_license: ai.dataset_license,
+    })
+}
+
 fn owner_prefix(owner: Principal) -> String {
     format!("{}/", owner.to_text())
 }
@@ -149,6 +204,7 @@ fn register_document(owner: Principal, now: u64, args: RegisterArgs) -> Result<D
     let file_name = clean_text("File name", &args.file_name, MAX_FILE_NAME_LEN, true).map_err(Rejected)?;
     let description =
         clean_text("Description", &args.description, MAX_DESCRIPTION_LEN, false).map_err(Rejected)?;
+    let ai = args.ai.as_ref().map(clean_ai_details).transpose().map_err(Rejected)?;
 
     if let Some(existing) = find(&hash) {
         return Err(RegisterError::AlreadyRegistered(existing));
@@ -189,6 +245,8 @@ fn register_document(owner: Principal, now: u64, args: RegisterArgs) -> Result<D
         description,
         file_name,
         file_size: args.file_size,
+        content_type: args.content_type,
+        ai,
         owner,
         registered_at: now,
         previous_hash,
@@ -281,7 +339,19 @@ mod tests {
             description: String::new(),
             file_name: format!("paper-{}.pdf", n),
             file_size: 1024,
+            content_type: ContentType::Document,
+            ai: None,
             previous_hash: previous.map(hash),
+        }
+    }
+
+    fn ai(model: &str) -> AiDetails {
+        AiDetails {
+            model: model.to_string(),
+            tool: "  ComfyUI ".to_string(),
+            prompt: "a lighthouse at dawn".to_string(),
+            dataset: String::new(),
+            dataset_license: DatasetLicense::Licensed,
         }
     }
 
@@ -323,6 +393,32 @@ mod tests {
         let mut no_title = args(1, None);
         no_title.title = "   ".to_string();
         assert!(rejection(register_document(alice(), 1, no_title)).contains("Title"));
+    }
+
+    #[test]
+    fn stores_ai_generation_details() {
+        let mut image = args(1, None);
+        image.content_type = ContentType::Image;
+        image.ai = Some(ai("Stable Diffusion XL"));
+        let doc = register_document(alice(), 1, image).unwrap();
+        assert_eq!(doc.content_type, ContentType::Image);
+        let details = doc.ai.unwrap();
+        assert_eq!(details.model, "Stable Diffusion XL");
+        assert_eq!(details.tool, "ComfyUI");
+        assert_eq!(details.dataset_license, DatasetLicense::Licensed);
+    }
+
+    #[test]
+    fn ai_details_need_a_model() {
+        let mut no_model = args(1, None);
+        no_model.ai = Some(ai(" "));
+        assert!(rejection(register_document(alice(), 1, no_model)).contains("AI model"));
+
+        let mut long_prompt = args(2, None);
+        let mut details = ai("GPT-4o");
+        details.prompt = "x".repeat(MAX_PROMPT_LEN + 1);
+        long_prompt.ai = Some(details);
+        assert!(rejection(register_document(alice(), 1, long_prompt)).contains("Prompt"));
     }
 
     #[test]

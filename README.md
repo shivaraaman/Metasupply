@@ -1,6 +1,6 @@
 # MetaSupply
 
-Prove when a document existed. MetaSupply records a tamper-proof SHA-256 fingerprint of a file on the Internet Computer (ICP) blockchain, together with its title, author and the blockchain's date and time. When the document changes, the new file is registered as a new version linked to the previous one. Anyone can check a file, or paste its fingerprint, to see when it was registered, by whom, and every version before and after it.
+Prove where content came from. MetaSupply records a tamper-proof SHA-256 fingerprint of a file on the Internet Computer (ICP) blockchain, together with its title, author, content type and the blockchain's date and time. For AI-generated content (images, text, code, music and more) it also records the AI model, generation tool, prompt, training dataset and that dataset's licence (open, licensed, private, scraped or unknown). When the content changes, the new file is registered as a new version linked to the previous one. Anyone can check a file, or paste its fingerprint, to see when it was registered, by whom, how it was made, and every version before and after it.
 
 - **Records can't be edited or deleted.** The canister has no methods for either.
 - **First come, first recorded.** A given file can only be registered once.

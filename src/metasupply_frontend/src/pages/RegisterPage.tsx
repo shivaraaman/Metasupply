@@ -2,11 +2,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
+  CONTENT_TYPES,
+  DATASET_LICENSES,
+  DATASET_LICENSE_LABELS,
   formatTimestamp,
   getDocument,
   getMyDocuments,
   groupIntoChains,
   registerDocument,
+  type AiInfo,
+  type ContentTypeName,
+  type DatasetLicenseName,
   type DocumentRecord,
 } from "../services/documents";
 import FileDrop, { type HashedFile } from "../components/FileDrop";
@@ -16,6 +22,8 @@ import Alert from "../components/Alert";
 import { inputClass, primaryButtonClass } from "../styles";
 
 const withoutExtension = (name: string) => name.replace(/\.[^.]+$/, "");
+
+const emptyAi: AiInfo = { model: "", tool: "", prompt: "", dataset: "", datasetLicense: "Unknown" };
 
 const RegisterPage: React.FC = () => {
   const { actor } = useAuth();
@@ -27,6 +35,9 @@ const RegisterPage: React.FC = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
+  const [contentType, setContentType] = useState<ContentTypeName>("Document");
+  const [usedAi, setUsedAi] = useState(false);
+  const [ai, setAi] = useState<AiInfo>(emptyAi);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [registered, setRegistered] = useState<DocumentRecord | null>(null);
@@ -44,9 +55,18 @@ const RegisterPage: React.FC = () => {
     [latestVersions, previousHash]
   );
 
+  // A new version usually keeps the author, content type and AI details of the one it replaces.
   useEffect(() => {
-    if (previous && !author) setAuthor(previous.author);
-  }, [previous, author]);
+    if (!previous) return;
+    setAuthor((current) => current || previous.author);
+    setContentType(previous.content_type);
+    setUsedAi(Boolean(previous.ai));
+    setAi(previous.ai ?? emptyAi);
+  }, [previous]);
+
+  const updateAi = (field: keyof AiInfo) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setAi({ ...ai, [field]: e.target.value });
 
   const handleHashed = async (result: HashedFile | null) => {
     setHashed(result);
@@ -76,6 +96,8 @@ const RegisterPage: React.FC = () => {
         description,
         fileName: hashed.file.name,
         fileSize: hashed.file.size,
+        contentType,
+        ai: usedAi ? ai : undefined,
         previousHash: previousHash || undefined,
       });
       if (outcome.kind === "registered") {
@@ -96,6 +118,9 @@ const RegisterPage: React.FC = () => {
     setExisting(null);
     setTitle("");
     setDescription("");
+    setContentType("Document");
+    setUsedAi(false);
+    setAi(emptyAi);
     setPreviousHash("");
   };
 
@@ -192,6 +217,65 @@ const RegisterPage: React.FC = () => {
             rows={3} maxLength={2000} className={`${inputClass} resize-y`}
             placeholder={previousHash ? "What changed in this version?" : "What is this document?"} />
         </div>
+        <div>
+          <label htmlFor="contentType" className="block text-gray-700 text-sm font-bold mb-2">Content type</label>
+          <select id="contentType" value={contentType}
+            onChange={(e) => setContentType(e.target.value as ContentTypeName)}
+            className={`${inputClass} bg-white`}>
+            {CONTENT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </div>
+
+        <fieldset className="border border-gray-200 rounded-lg p-4 space-y-4">
+          <label className="flex items-center gap-3 font-bold text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={usedAi} onChange={(e) => setUsedAi(e.target.checked)}
+              className="h-5 w-5 accent-blue-600" />
+            This content was generated with AI
+          </label>
+          {usedAi && (
+            <>
+              <p className="text-sm text-gray-500">
+                These details are recorded with the file so anyone can see how it was made.
+              </p>
+              <div>
+                <label htmlFor="aiModel" className="block text-gray-700 text-sm font-bold mb-2">AI model</label>
+                <input id="aiModel" type="text" value={ai.model} onChange={updateAi("model")} required
+                  maxLength={128} className={inputClass} placeholder="e.g., GPT-4o, Stable Diffusion XL, Suno v4" />
+              </div>
+              <div>
+                <label htmlFor="aiTool" className="block text-gray-700 text-sm font-bold mb-2">
+                  Generation tool <span className="font-normal text-gray-500">(optional)</span>
+                </label>
+                <input id="aiTool" type="text" value={ai.tool} onChange={updateAi("tool")}
+                  maxLength={128} className={inputClass} placeholder="e.g., ChatGPT, Midjourney, ComfyUI" />
+              </div>
+              <div>
+                <label htmlFor="aiPrompt" className="block text-gray-700 text-sm font-bold mb-2">
+                  Prompt <span className="font-normal text-gray-500">(optional)</span>
+                </label>
+                <textarea id="aiPrompt" value={ai.prompt} onChange={updateAi("prompt")} rows={3}
+                  maxLength={4000} className={`${inputClass} resize-y`} placeholder="The prompt used to generate it" />
+              </div>
+              <div>
+                <label htmlFor="aiDataset" className="block text-gray-700 text-sm font-bold mb-2">
+                  Training dataset <span className="font-normal text-gray-500">(optional)</span>
+                </label>
+                <input id="aiDataset" type="text" value={ai.dataset} onChange={updateAi("dataset")}
+                  maxLength={200} className={inputClass} placeholder="e.g., LAION-5B, company design archive" />
+              </div>
+              <div>
+                <label htmlFor="aiLicense" className="block text-gray-700 text-sm font-bold mb-2">Dataset licence</label>
+                <select id="aiLicense" value={ai.datasetLicense}
+                  onChange={(e) => setAi({ ...ai, datasetLicense: e.target.value as DatasetLicenseName })}
+                  className={`${inputClass} bg-white`}>
+                  {DATASET_LICENSES.map((license) => (
+                    <option key={license} value={license}>{DATASET_LICENSE_LABELS[license]}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </fieldset>
 
         {error && <Alert kind="error">{error}</Alert>}
 

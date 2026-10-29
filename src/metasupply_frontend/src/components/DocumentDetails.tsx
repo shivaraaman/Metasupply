@@ -1,6 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { formatBytes, formatTimestamp, type DocumentRecord } from "../services/documents";
+import {
+  DATASET_LICENSE_LABELS,
+  formatBytes,
+  formatTimestamp,
+  type DocumentRecord,
+} from "../services/documents";
 
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="sm:grid sm:grid-cols-3 sm:gap-4 py-2">
@@ -14,6 +19,19 @@ const DocumentDetails: React.FC<{ document: DocumentRecord }> = ({ document: doc
     <Row label="Title">{doc.title}</Row>
     <Row label="Author">{doc.author}</Row>
     {doc.description && <Row label="Description"><span className="whitespace-pre-wrap">{doc.description}</span></Row>}
+    <Row label="Content type">
+      {doc.content_type}
+      {doc.ai && <span className="ml-2 text-xs font-medium bg-purple-100 text-purple-700 rounded px-2 py-0.5">AI-generated</span>}
+    </Row>
+    {doc.ai && (
+      <>
+        <Row label="AI model">{doc.ai.model}</Row>
+        {doc.ai.tool && <Row label="Generation tool">{doc.ai.tool}</Row>}
+        {doc.ai.prompt && <Row label="Prompt"><span className="whitespace-pre-wrap">{doc.ai.prompt}</span></Row>}
+        {doc.ai.dataset && <Row label="Training dataset">{doc.ai.dataset}</Row>}
+        <Row label="Dataset licence">{DATASET_LICENSE_LABELS[doc.ai.datasetLicense]}</Row>
+      </>
+    )}
     <Row label="Registered on">{formatTimestamp(doc.registered_at)}</Row>
     <Row label="Version">{doc.version}</Row>
     <Row label="File">{doc.file_name} ({formatBytes(doc.file_size)})</Row>

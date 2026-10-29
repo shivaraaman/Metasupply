@@ -2,10 +2,32 @@ import type { Principal } from '@icp-sdk/core/principal';
 import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 
+export interface AiDetails {
+  'model' : string,
+  'dataset' : string,
+  'tool' : string,
+  'prompt' : string,
+  'dataset_license' : DatasetLicense,
+}
+export type ContentType = { 'Code' : null } |
+  { 'Text' : null } |
+  { 'Image' : null } |
+  { 'Document' : null } |
+  { 'Audio' : null } |
+  { 'Other' : null } |
+  { 'Video' : null } |
+  { 'Dataset' : null };
+export type DatasetLicense = { 'Licensed' : null } |
+  { 'Open' : null } |
+  { 'Private' : null } |
+  { 'Unknown' : null } |
+  { 'Scraped' : null };
 export interface Document {
+  'ai' : [] | [AiDetails],
   'title' : string,
   'owner' : Principal,
   'hash' : string,
+  'content_type' : ContentType,
   'description' : string,
   'file_name' : string,
   'file_size' : bigint,
@@ -15,8 +37,10 @@ export interface Document {
   'registered_at' : bigint,
 }
 export interface RegisterArgs {
+  'ai' : [] | [AiDetails],
   'title' : string,
   'hash' : string,
+  'content_type' : ContentType,
   'description' : string,
   'file_name' : string,
   'file_size' : bigint,
